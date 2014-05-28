@@ -28,6 +28,7 @@ SOFTWARE.
 
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Frontend/CompilerInvocation.h>
+#include <clang/Parse/ParseAST.h>
 #include <clang/Parse/Parser.h>
 #include <clang/Sema/Sema.h>
 #include <clang/Sema/SemaConsumer.h>
@@ -46,14 +47,14 @@ public:
                const char *filename) : m_compiler()
     {
         // Create diagnostics.
-        m_compiler.createDiagnostics(0, NULL);
+        m_compiler.createDiagnostics(static_cast<clang::DiagnosticOptions*>(nullptr), nullptr);
 
         // Create target info.
         // XXX make this configurable?
         clang::TargetOptions target_options;
-        target_options.Triple = llvm::sys::getHostTriple();
+        target_options.Triple = llvm::sys::getDefaultTargetTriple();
         m_compiler.setTarget(clang::TargetInfo::CreateTargetInfo(
-            m_compiler.getDiagnostics(), target_options));
+            m_compiler.getDiagnostics(), &target_options));
 
         // Set the language options.
         // XXX make this configurable?
@@ -76,9 +77,9 @@ public:
         m_compiler.createSourceManager(m_compiler.getFileManager());
 
         // Set the main file.
-        m_compiler.getSourceManager().createMainFileIDForMemBuffer(
-            llvm::MemoryBuffer::getMemBufferCopy(
-                llvm::StringRef(buffer, buflen), filename));
+        m_compiler.getSourceManager().createFileID(
+            llvm::MemoryBuffer::getMemBufferCopy(llvm::StringRef(buffer, buflen),
+                                                 filename));
 
         m_preprocessor.reset(new impl::PreprocessorImpl(m_compiler));
 
@@ -88,8 +89,8 @@ public:
         m_compiler.setASTConsumer(semaConsumer);
         m_compiler.createSema(clang::TU_Complete, NULL);
         semaConsumer->InitializeSema(m_compiler.getSema());
-        m_parser.reset(new clang::Parser(
-            m_compiler.getPreprocessor(), m_compiler.getSema()));
+        m_parser.reset(new clang::Parser(m_compiler.getPreprocessor(), 
+                       m_compiler.getSema(), false));
     }
 
     Preprocessor& getPreprocessor()
@@ -100,7 +101,11 @@ public:
     ParseResult parse()
     {
         m_compiler.getPreprocessor().EnterMainSourceFile();
-        m_parser->ParseTranslationUnit();
+        clang::ParseAST(m_compiler.getPreprocessor(), &(m_compiler.getASTConsumer()),
+                        m_compiler.getASTContext(), false,
+                        clang::TranslationUnitKind::TU_Complete,
+                        &(m_compiler.getCodeCompletionConsumer()),
+                        false);
         m_preprocessor->check_exception();
         return ParseResult(boost::shared_ptr<ParseResultImpl>(
             new ParseResultImpl(m_compiler.getASTContext())));

@@ -64,7 +64,7 @@ Token::Token(clang::Preprocessor &pp, clang::tok::TokenKind kind,
         llvm::StringRef s(value, value_len);
         token.setIdentifierInfo(
             m_impl->preprocessor.getIdentifierInfo(s));
-        m_impl->preprocessor.CreateString(value, value_len, token);
+        m_impl->preprocessor.CreateString(llvm::StringRef(value, value_len), token);
     }
     else
     {
@@ -77,14 +77,14 @@ Token::Token(clang::Preprocessor &pp, clang::tok::TokenKind kind,
             }
             else
             {
-                value = clang::tok::getTokenSimpleSpelling(kind);
+                value = clang::tok::getPunctuatorSpelling(kind);
                 if (value)
                     value_len = strlen(value);
             }
         }
         // Must use this, as it stores the value in a "scratch buffer" for
         // later reference.
-        pp.CreateString(value, value_len, token);
+        pp.CreateString(llvm::StringRef(value, value_len), token);
     }
 }
 

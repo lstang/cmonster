@@ -20,7 +20,7 @@
 
 from clang.exprs cimport Expr
 from clang.source cimport SourceLocation
-
+from cpython cimport bool
 
 cdef extern from "clang/AST/Stmt.h" namespace "clang::Stmt":
     cdef enum StmtClass:
@@ -38,6 +38,7 @@ cdef extern from "clang/AST/StmtIterator.h" namespace "clang":
         StmtRange(StmtRange&)
         StmtRange& operator++()
         Stmt* operator*()
+        bool empty()
 
 
 cdef extern from "clang/AST/Stmt.h" namespace "clang":

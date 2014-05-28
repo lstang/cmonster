@@ -119,7 +119,7 @@ cdef class FunctionType(Type):
     property result_type:
         def __get__(self):
             return create_QualType(
-                (<clang.types.FunctionType*>self.ptr).getResultType())
+                (<clang.types.FunctionType*>self.ptr).getReturnType())
 
 
 cdef class FunctionProtoType(FunctionType):

@@ -28,7 +28,7 @@ SOFTWARE.
 namespace cmonster {
 namespace python {
 
-class Preprocessor;
+struct Preprocessor;
 
 /**
  */

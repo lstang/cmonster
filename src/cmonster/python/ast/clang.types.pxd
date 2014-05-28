@@ -71,7 +71,7 @@ cdef extern from "clang/AST/Type.h" namespace "clang":
 
 
     cdef cppclass FunctionType(Type):
-        QualType getResultType()
+        QualType getReturnType()
 
 
     cdef cppclass QualType:

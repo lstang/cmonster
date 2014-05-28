@@ -114,8 +114,10 @@ IncludeLocatorDiagnosticClient::HandleDiagnostic(
                         // is reported while one is already "in flight".
                         clang::DiagnosticsEngine &old_diag =
                             m_pp.getDiagnostics();
+                        auto& options = m_pp.getDiagnostics().getDiagnosticOptions();
                         clang::DiagnosticsEngine temp_diag(
                             m_pp.getDiagnostics().getDiagnosticIDs(),
+                            &options,
                             this, false);
                         temp_diag.setSourceManager(
                             &old_diag.getSourceManager());
@@ -134,8 +136,11 @@ IncludeLocatorDiagnosticClient::HandleDiagnostic(
                 // the new filename.
                 clang::DiagnosticsEngine &old_diag = m_pp.getDiagnostics();
                 old_diag.setLastDiagnosticIgnored();
+                auto& options = m_pp.getDiagnostics().getDiagnosticOptions();
                 clang::DiagnosticsEngine temp_diag(
-                    m_pp.getDiagnostics().getDiagnosticIDs(), this, false);
+                    m_pp.getDiagnostics().getDiagnosticIDs(), 
+                    &options,
+                    this, false);
                 temp_diag.setSourceManager(&old_diag.getSourceManager());
                 temp_diag.Report(info.getLocation(), info.getID()) << path;
                 return;
@@ -146,14 +151,17 @@ IncludeLocatorDiagnosticClient::HandleDiagnostic(
             // Don't let exceptions escape to Clang. Raise a new diagnostic.
             clang::DiagnosticsEngine &old_diag = m_pp.getDiagnostics();
             old_diag.setLastDiagnosticIgnored();
+            auto& options = m_pp.getDiagnostics().getDiagnosticOptions();
             clang::DiagnosticsEngine temp_diag(
-                m_pp.getDiagnostics().getDiagnosticIDs(), this, false);
+                m_pp.getDiagnostics().getDiagnosticIDs(), 
+                &options,
+                this, false);
             temp_diag.setSourceManager(&old_diag.getSourceManager());
 
             // Report the diagnostic.
             unsigned diagId = temp_diag.getCustomDiagID(
                 clang::DiagnosticsEngine::Error,
-                llvm::StringRef("Exception thrown in include locator: %0"));
+                "Exception thrown in include locator: %0");
             boost::exception_ptr const& e = boost::current_exception();
             if (e)
             {
@@ -177,17 +185,17 @@ IncludeLocatorDiagnosticClient::HandleDiagnostic(
         clang::DiagnosticConsumer::HandleDiagnostic(level, info);
 }
 
-clang::DiagnosticConsumer*
-IncludeLocatorDiagnosticClient::clone(clang::DiagnosticsEngine &diags) const
-{
-    std::auto_ptr<clang::DiagnosticConsumer> delegate;
-    if (m_delegate.get())
-        delegate.reset(m_delegate->clone(diags));
-    IncludeLocatorDiagnosticClient *cloned =
-        new IncludeLocatorDiagnosticClient(m_pp, delegate.get());
-    delegate.release();
-    return cloned;
-}
+//clang::DiagnosticConsumer*
+//IncludeLocatorDiagnosticClient::clone(clang::DiagnosticsEngine &diags) const
+//{
+    //std::auto_ptr<clang::DiagnosticConsumer> delegate;
+    //if (m_delegate.get())
+        //delegate.reset(m_delegate->clone(diags));
+    //IncludeLocatorDiagnosticClient *cloned =
+        //new IncludeLocatorDiagnosticClient(m_pp, delegate.get());
+    //delegate.release();
+    //return cloned;
+//}
 
 clang::DiagnosticConsumer* IncludeLocatorDiagnosticClient::takeDelegate()
 {

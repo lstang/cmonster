@@ -36,7 +36,7 @@ SOFTWARE.
 #include "source_location.hpp"
 #include "pyfile_ostream.hpp"
 
-#include <clang/Rewrite/Rewriter.h>
+#include <clang/Rewrite/Core/Rewriter.h>
 #include <clang/Basic/SourceManager.h>
 
 namespace cmonster {
@@ -76,7 +76,7 @@ Rewriter_init(Rewriter *self, PyObject *args, PyObject *kwds)
     cmonster::core::ParseResult &result_ = get_parse_result(self->result);
     clang::ASTContext &astctx = result_.getClangASTContext();
     self->rewriter = new clang::Rewriter(
-        astctx.getSourceManager(), astctx.getLangOptions());
+        astctx.getSourceManager(), astctx.getLangOpts());
     return 0;
 }
 
@@ -144,7 +144,7 @@ insert_text(Rewriter *self, PyObject *loc,
     // Ensure source location is in main file.
     cmonster::core::ParseResult &result_ = get_parse_result(self->result);
     clang::ASTContext &astctx = result_.getClangASTContext();
-    if (!astctx.getSourceManager().isFromMainFile(sloc))
+    if (!astctx.getSourceManager().isInMainFile(sloc))
     {
         PyErr_SetString(PyExc_ValueError,
             "Source location is outside main file");

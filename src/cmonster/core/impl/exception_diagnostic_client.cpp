@@ -22,6 +22,7 @@ SOFTWARE.
 
 #include "exception_diagnostic_client.hpp"
 
+#include <llvm/Support/Compiler.h>
 #include <llvm/ADT/SmallString.h>
 
 namespace cmonster {

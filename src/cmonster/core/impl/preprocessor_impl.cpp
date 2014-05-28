@@ -77,9 +77,11 @@ namespace impl {
 struct FileChangePPCallback : public clang::PPCallbacks
 {
     FileChangePPCallback() : depth(0), location() {}
+
     void FileChanged(clang::SourceLocation Loc,
                      clang::PPCallbacks::FileChangeReason Reason,
-                     clang::SrcMgr::CharacteristicKind FileType)
+                     clang::SrcMgr::CharacteristicKind FileType,
+                     clang::FileID PrevFID = clang::FileID()) override
     {
         location = Loc;
         switch (Reason)
@@ -89,6 +91,7 @@ struct FileChangePPCallback : public clang::PPCallbacks
             default: break;
         }
     }
+
     unsigned int depth;
     clang::SourceLocation location;
 };
@@ -255,12 +258,12 @@ private:
 PreprocessorImpl::PreprocessorImpl(clang::CompilerInstance &compiler)
   : m_compiler(compiler), m_exception()
 {
-    m_compiler.createPreprocessor();
+    m_compiler.createPreprocessor(clang::TranslationUnitKind::TU_Complete);
 
     // Initialise builtins.
     m_compiler.getPreprocessor().getBuiltinInfo().InitializeBuiltins(
         m_compiler.getPreprocessor().getIdentifierTable(),
-        m_compiler.getPreprocessor().getLangOptions());
+        m_compiler.getPreprocessor().getLangOpts());
 
     // Set the predefines on the preprocessor.
     std::string predefines = m_compiler.getPreprocessor().getPredefines();
@@ -317,14 +320,14 @@ PreprocessorImpl::add_include_dir(std::string const& path, bool sysinclude)
     if (sysinclude)
     {
         clang::DirectoryLookup lookup(
-            entry, clang::SrcMgr::C_System, true, false);
+            entry, clang::SrcMgr::C_System, false);
         search_paths.insert(
             search_paths.begin() + (n_quoted + n_angled), lookup);
     }
     else
     {
         clang::DirectoryLookup lookup(
-            entry, clang::SrcMgr::C_User, true, false);
+            entry, clang::SrcMgr::C_User, false);
         search_paths.push_back(lookup);
     }
     headers.SetSearchPaths(
@@ -451,12 +454,12 @@ PreprocessorImpl::add_macro_definition(
     clang::MacroInfo *existing_macro = pp.getMacroInfo(macro_identifier);
     if (existing_macro)
     {
-        bool result = macro->isIdenticalTo(*existing_macro, pp);
+        bool result = macro->isIdenticalTo(*existing_macro, pp, false);
         macro->Destroy();
         return result;
     }
 
-    pp.setMacroInfo(macro_identifier, macro);
+    pp.appendDefMacroDirective(macro_identifier, macro);
     return true;
 }
 
@@ -485,7 +488,7 @@ bool PreprocessorImpl::define(std::string const& name,
             t.startToken();
             t.setKind(clang::tok::identifier);
             t.setIdentifierInfo(pp.getIdentifierInfo("_CMONSTER_PRAGMA"));
-            pp.CreateString("_CMONSTER_PRAGMA", 16, t);
+            pp.CreateString(llvm::StringRef("_CMONSTER_PRAGMA"), t);
 
             // Allocate a new macro.
             macro = pp.AllocateMacroInfo(t.getLocation());
@@ -501,28 +504,28 @@ bool PreprocessorImpl::define(std::string const& name,
         {
             t.startToken();
             t.setKind(clang::tok::l_paren);
-            pp.CreateString("(", 1, t);
+            pp.CreateString(llvm::StringRef("("), t);
             macro->AddTokenToBody(t);
         }
         {
             t.startToken();
             t.setKind(clang::tok::identifier);
             t.setIdentifierInfo(pp.getIdentifierInfo("cmonster_pragma"));
-            pp.CreateString("cmonster_pragma", 15, t);
+            pp.CreateString(llvm::StringRef("cmonster_pragma"), t);
             macro->AddTokenToBody(t);
         }
         {
             t.startToken();
             t.setKind(clang::tok::identifier);
             t.setIdentifierInfo(pp.getIdentifierInfo("__VA_ARGS__"));
-            pp.CreateString("__VA_ARGS__", 11, t);
+            pp.CreateString(llvm::StringRef("__VA_ARGS__"), t);
             t.setFlag(clang::Token::LeadingSpace);
             macro->AddTokenToBody(t);
         }
         {
             t.startToken();
             t.setKind(clang::tok::r_paren);
-            pp.CreateString(")", 1, t);
+            pp.CreateString(llvm::StringRef(")"), t);
             macro->AddTokenToBody(t);
         }
 
@@ -531,33 +534,32 @@ bool PreprocessorImpl::define(std::string const& name,
             t.startToken();
             t.setKind(clang::tok::identifier);
             t.setIdentifierInfo(pp.getIdentifierInfo("_Pragma"));
-            pp.CreateString("_Pragma", 7, t);
+            pp.CreateString(llvm::StringRef("_Pragma"), t);
             macro->AddTokenToBody(t);
         }
         {
             t.startToken();
             t.setKind(clang::tok::l_paren);
-            pp.CreateString("(", 1, t);
+            pp.CreateString(llvm::StringRef("("), t);
             macro->AddTokenToBody(t);
         }
         {
             std::string qualified_name = "\"cmonster " + name + "\"";
             t.startToken();
             t.setKind(clang::tok::string_literal);
-            pp.CreateString(
-                qualified_name.c_str(), qualified_name.size(), t);
+            pp.CreateString(llvm::StringRef(qualified_name.c_str()), t);
             macro->AddTokenToBody(t);
         }
         {
             t.startToken();
             t.setKind(clang::tok::r_paren);
-            pp.CreateString(")", 1, t);
+            pp.CreateString(llvm::StringRef(")"), t);
             macro->AddTokenToBody(t);
             macro->setDefinitionEndLoc(t.getLocation());
         }
 
         // Add the macro to the preprocessor.
-        pp.setMacroInfo(macro_identifier, macro);
+        pp.appendDefMacroDirective(macro_identifier, macro);
         return true;
     }
     return false;
@@ -634,7 +636,7 @@ PreprocessorImpl::tokenize(const char *s, size_t len)
     if (m_file_change_callback->depth == 0)
     {
         m_compiler.resetAndLeakPreprocessor();
-        m_compiler.createPreprocessor();
+        m_compiler.createPreprocessor(clang::TranslationUnitKind::TU_Complete);
         m_compiler.getPreprocessor().EnterMainSourceFile();
     }
 
@@ -648,7 +650,7 @@ PreprocessorImpl::tokenize(const char *s, size_t len)
     clang::SourceManager &srcmgr = m_compiler.getSourceManager();
 
     // Transfer ownership of the memory buffer to the source manager.
-    clang::FileID fid = srcmgr.createFileIDForMemBuffer(mem.release());
+    clang::FileID fid = srcmgr.createFileID(mem.release());
 
     // Record the current include depth, and enter the file. We can use the
     // file change callback to (a) ensure the memory buffer file was entered,

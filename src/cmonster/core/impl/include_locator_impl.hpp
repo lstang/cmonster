@@ -64,7 +64,7 @@ public:
     /**
      * Override for clang::DiagnosticConsumer::clone.
      */
-    clang::DiagnosticConsumer* clone(clang::DiagnosticsEngine &diags) const;
+    //clang::DiagnosticConsumer* clone(clang::DiagnosticsEngine &diags) const;
 
     clang::DiagnosticConsumer *takeDelegate();
     void setDelegate(clang::DiagnosticConsumer *delegate);

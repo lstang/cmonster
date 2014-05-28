@@ -126,7 +126,7 @@ SourceLocation_get_filename(SourceLocation *self, void *closure)
 static PyObject*
 SourceLocation_get_in_main_file(SourceLocation *self, void *closure)
 {
-    if (self->source_manager->isFromMainFile(self->source_location))
+    if (self->source_manager->isInMainFile(self->source_location))
         Py_RETURN_TRUE;
     Py_RETURN_FALSE;
 }

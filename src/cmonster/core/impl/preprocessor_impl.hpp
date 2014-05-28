@@ -34,8 +34,8 @@ namespace cmonster {
 namespace core {
 namespace impl {
 
-class TokenSaverPragmaHandler;
-class FileChangePPCallback;
+struct TokenSaverPragmaHandler;
+struct FileChangePPCallback;
 
 class PreprocessorImpl : public Preprocessor
 {

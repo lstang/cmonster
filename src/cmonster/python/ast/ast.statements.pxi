@@ -44,7 +44,7 @@ cdef class Statement:
             cdef clang.statements.StmtRange *range_ = \
                 new clang.statements.StmtRange(self.ptr.children())
             try:
-                while <bint>deref(range_):
+                while not range_.empty():
                     yield create_Statement(deref(deref(range_)), self.astctx)
                     inc(deref(range_))
             finally:
@@ -56,7 +56,7 @@ cdef class StatementRange:
     def __dealloc__(self):
         if self.ptr: del self.ptr
     def __nonzero__(self):
-        return self.ptr != NULL and <bint>deref(self.ptr)
+        return self.ptr != NULL and not self.ptr.empty()
 
 
 cdef class StatementIterator:

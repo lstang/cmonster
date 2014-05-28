@@ -36,6 +36,7 @@ import distutils.sysconfig
 cfg_vars = distutils.sysconfig.get_config_vars()
 if "CFLAGS" in cfg_vars:
     cfg_vars["CFLAGS"] = cfg_vars["CFLAGS"].replace("-Wstrict-prototypes", "")
+    cfg_vars["CFLAGS"] = cfg_vars["CFLAGS"].replace("-fstack-protector-strong", "")
 
 
 # We embed a second extension module in one shared library, so we need to
@@ -113,7 +114,7 @@ _cmonster_extension = Extension(
     # LLVM/Clang libraries.
     library_dirs = [llvm_libdir],
     libraries = [
-        "clangRewrite",
+        "clangRewriteCore",
         "clangFrontend",
         "clangDriver",
         "clangSerialization",
@@ -131,7 +132,7 @@ _cmonster_extension = Extension(
     ],
 
     # No RTTI in Clang, so none here either.
-    extra_compile_args = ["-fno-rtti"]
+    extra_compile_args = ["-fno-rtti", "-std=c++11", "-Xclang", "-fcolor-diagnostics"]
 )
 
 

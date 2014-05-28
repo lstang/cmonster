@@ -27,6 +27,7 @@ SOFTWARE.
 
 #include <clang/Basic/Diagnostic.h>
 
+
 namespace cmonster {
 namespace core {
 namespace impl {
