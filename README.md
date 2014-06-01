@@ -1,5 +1,16 @@
 # cmonster
 
+This is a fork of [cmonster](https://github.com/axw/cmonster).
+
+For now, the only improvement is that this version does compile with the
+latest clang and llvm sources. There is more to come, check the issues
+(you can also open feature requests, they will be considered).
+
+**Warning**: So far the refactorizations for the ~2 years of compatibility loss
+are not tested at all, there might be bugs.
+
+The following are the original readme contents.
+
 cmonster is a Python wrapper for the [Clang](http://clang.llvm.org/) C++
 parser.
 
