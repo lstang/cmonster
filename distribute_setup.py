@@ -464,7 +464,7 @@ def _extractall(self, path=".", members=None):
     for tarinfo in directories:
         dirpath = os.path.join(path, tarinfo.name)
         try:
-            self.chown(tarinfo, dirpath)
+            self.chown(tarinfo, dirpath, True)
             self.utime(tarinfo, dirpath)
             self.chmod(tarinfo, dirpath)
         except ExtractError:
