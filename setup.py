@@ -1,7 +1,7 @@
-from distribute_setup import use_setuptools
-use_setuptools()
+#from distribute_setup import use_setuptools
+#use_setuptools()
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.extension import Extension
 import subprocess
 import Cython.Distutils
