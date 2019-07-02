@@ -107,7 +107,7 @@ def _build_egg(egg, tarball, to_dir):
 
         # building an egg
         log.warn('Building a Distribute egg in %s', to_dir)
-        _python_cmd('setup.py', '-q', 'bdist_egg', '--dist-dir', to_dir)
+        _python_cmd('setup.py', 'bdist_egg', '--dist-dir', to_dir)
 
     finally:
         os.chdir(old_wd)
