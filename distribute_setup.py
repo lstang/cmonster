@@ -20,6 +20,7 @@ import fnmatch
 import tempfile
 import tarfile
 from distutils import log
+from setuptools import setup
 
 try:
     from site import USER_SITE
